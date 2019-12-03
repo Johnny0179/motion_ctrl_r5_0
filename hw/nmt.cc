@@ -82,15 +82,3 @@ void nmt::CmdSync(void) {
   send(nmt_frame);
 }
 
-// TxPDO1
-int nmt::TxPdo1(u8 slave_id, u16 ctrl_wrd) {
-  u32 tx_pdo1_frame[kFramDataLength];
-
-  // tx_pdo1 frame init
-  tx_pdo1_frame[0] = kPDO1rx + slave_id;
-  tx_pdo1_frame[1] = 2;
-  tx_pdo1_frame[2] = ctrl_wrd & 0xff;
-  tx_pdo1_frame[3] = (ctrl_wrd >> 8) & 0xff;
-
-  return send(tx_pdo1_frame);
-}

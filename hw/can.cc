@@ -1,19 +1,20 @@
 #include "can.hpp"
 
-
 can::can(/* args */) {}
 
 can::~can() {}
 
 int can::CanInit(XScuGic *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
-                 u16 CanIntrId) {
+                 u16 CanIntrId)
+{
   int Status;
   XCanPs_Config *ConfigPtr;
   /*
    * Initialize the Can device.
    */
   ConfigPtr = XCanPs_LookupConfig(CanDeviceId);
-  if (ConfigPtr == NULL) {
+  if (ConfigPtr == NULL)
+  {
     return XST_FAILURE;
   }
   XCanPs_CfgInitialize(CanInstPtr, ConfigPtr, ConfigPtr->BaseAddr);
@@ -23,7 +24,8 @@ int can::CanInit(XScuGic *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
    * device and the driver.
    */
   Status = XCanPs_SelfTest(CanInstPtr);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     return XST_FAILURE;
   }
 
@@ -55,7 +57,8 @@ int can::CanInit(XScuGic *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
    * Connect to the interrupt controller.
    */
   Status = SetupInterruptSystem(IntcInstPtr, CanInstPtr, CanIntrId);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     return XST_FAILURE;
   }
 
@@ -98,7 +101,8 @@ int can::CanInit(XScuGic *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
  *function may enter an infinite loop and will never return to the caller.
  *
  ******************************************************************************/
-void can::Config(XCanPs *InstancePtr) {
+void can::Config(XCanPs *InstancePtr)
+{
   /*
    * Enter Configuration Mode if the device is not currently in
    * Configuration Mode.
@@ -116,7 +120,8 @@ void can::Config(XCanPs *InstancePtr) {
                       kTestBtrSecondTimeSegment, kTestBtrFirstTimeSegment);
 }
 
-int can::SendFrame(XCanPs *InstancePtr, u32 *TxFrame) {
+int can::SendFrame(XCanPs *InstancePtr, u32 *TxFrame)
+{
   // u8 *FramePtr;
   // int Index;
   // int Status;
@@ -145,7 +150,24 @@ int can::SendFrame(XCanPs *InstancePtr, u32 *TxFrame) {
   return XCanPs_Send(InstancePtr, TxFrame);
 }
 
-int can::send(u32 *TxFrame) { return SendFrame(&can_instance_, TxFrame); }
+int can::send(can_frame &send_frame)
+{
+  u32 tx_frame[4];
+  u8 *frame_ptr;
+  int i;
+
+  tx_frame[0] = send_frame.can_id;
+  tx_frame[1] = send_frame.can_dlc;
+  frame_ptr = (u8 *)(&tx_frame[2]);
+
+  for (i = 0; i < send_frame.can_dlc; i++)
+  {
+    *frame_ptr = send_frame[i];
+    frame_ptr++;
+  }
+
+  return SendFrame(&can_instance_, tx_frame);
+}
 
 /*****************************************************************************/
 /**
@@ -162,7 +184,8 @@ int can::send(u32 *TxFrame) { return SendFrame(&can_instance_, TxFrame); }
  *context.
  *
  ******************************************************************************/
-void can::SendHandler(void *CallBackRef) {
+void can::SendHandler(void *CallBackRef)
+{
   /*
    * The frame was sent successfully. Notify the task context.
    */
@@ -185,11 +208,27 @@ void can::SendHandler(void *CallBackRef) {
  *context.
  *
  ******************************************************************************/
-void can::RecvHandler(void *CallBackRef) {
+void can::RecvHandler(void *CallBackRef)
+{
   XCanPs *CanPtr = (XCanPs *)CallBackRef;
   int Status;
+  u32 rx_frame[4];
+  u8 *frame_ptr;
+  int i;
 
-  Status = XCanPs_Recv(CanPtr, recev_frame_);
+  Status = XCanPs_Recv(CanPtr, rx_frame);
+
+  recv_frame_.can_id=rx_frame[0];
+  recv_frame_.can_dlc=rx_frame[1];
+  frame_ptr=(u8 *)(&rx_frame[2]);
+
+  for ( i = 0; i < recv_frame_.can_dlc; i++)
+  {
+    recv_frame_.data[i]=*frame_ptr;
+    frame_ptr++;
+  }
+  
+
   // if (Status != XST_SUCCESS) {
   //   loopback_error_ = TRUE;
   //   recv_done_ = TRUE;
@@ -222,7 +261,8 @@ void can::RecvHandler(void *CallBackRef) {
   //     break;
   //   }
   // }
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     recv_done_ = TRUE;
   }
 }
@@ -245,32 +285,38 @@ void can::RecvHandler(void *CallBackRef) {
  *context.
  *
  ******************************************************************************/
-void can::ErrorHandler(void *CallBackRef, u32 ErrorMask) {
-  if (ErrorMask & XCANPS_ESR_ACKER_MASK) {
+void can::ErrorHandler(void *CallBackRef, u32 ErrorMask)
+{
+  if (ErrorMask & XCANPS_ESR_ACKER_MASK)
+  {
     /*
      * ACK Error handling code should be put here.
      */
   }
 
-  if (ErrorMask & XCANPS_ESR_BERR_MASK) {
+  if (ErrorMask & XCANPS_ESR_BERR_MASK)
+  {
     /*
      * Bit Error handling code should be put here.
      */
   }
 
-  if (ErrorMask & XCANPS_ESR_STER_MASK) {
+  if (ErrorMask & XCANPS_ESR_STER_MASK)
+  {
     /*
      * Stuff Error handling code should be put here.
      */
   }
 
-  if (ErrorMask & XCANPS_ESR_FMER_MASK) {
+  if (ErrorMask & XCANPS_ESR_FMER_MASK)
+  {
     /*
      * Form Error handling code should be put here.
      */
   }
 
-  if (ErrorMask & XCANPS_ESR_CRCER_MASK) {
+  if (ErrorMask & XCANPS_ESR_CRCER_MASK)
+  {
     /*
      * CRC Error handling code should be put here.
      */
@@ -312,10 +358,12 @@ void can::ErrorHandler(void *CallBackRef, u32 ErrorMask) {
  *context. This function should be changed to meet specific application needs.
  *
  ******************************************************************************/
-void can::EventHandler(void *CallBackRef, u32 IntrMask) {
+void can::EventHandler(void *CallBackRef, u32 IntrMask)
+{
   XCanPs *CanPtr = (XCanPs *)CallBackRef;
 
-  if (IntrMask & XCANPS_IXR_BSOFF_MASK) {
+  if (IntrMask & XCANPS_IXR_BSOFF_MASK)
+  {
     /*
      * Entering Bus off status interrupt requires
      * the CAN device be reset and reconfigured.
@@ -325,46 +373,53 @@ void can::EventHandler(void *CallBackRef, u32 IntrMask) {
     return;
   }
 
-  if (IntrMask & XCANPS_IXR_RXOFLW_MASK) {
+  if (IntrMask & XCANPS_IXR_RXOFLW_MASK)
+  {
     /*
      * Code to handle RX FIFO Overflow Interrupt should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_RXUFLW_MASK) {
+  if (IntrMask & XCANPS_IXR_RXUFLW_MASK)
+  {
     /*
      * Code to handle RX FIFO Underflow Interrupt
      * should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_TXBFLL_MASK) {
+  if (IntrMask & XCANPS_IXR_TXBFLL_MASK)
+  {
     /*
      * Code to handle TX High Priority Buffer Full
      * Interrupt should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_TXFLL_MASK) {
+  if (IntrMask & XCANPS_IXR_TXFLL_MASK)
+  {
     /*
      * Code to handle TX FIFO Full Interrupt should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_WKUP_MASK) {
+  if (IntrMask & XCANPS_IXR_WKUP_MASK)
+  {
     /*
      * Code to handle Wake up from sleep mode Interrupt
      * should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_SLP_MASK) {
+  if (IntrMask & XCANPS_IXR_SLP_MASK)
+  {
     /*
      * Code to handle Enter sleep mode Interrupt should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_ARBLST_MASK) {
+  if (IntrMask & XCANPS_IXR_ARBLST_MASK)
+  {
     /*
      * Code to handle Lost bus arbitration Interrupt
      * should be put here.
@@ -394,13 +449,15 @@ void can::EventHandler(void *CallBackRef, u32 IntrMask) {
  *
  ****************************************************************************/
 int can::SetupInterruptSystem(XScuGic *IntcInstancePtr, XCanPs *CanInstancePtr,
-                              u16 CanIntrId) {
+                              u16 CanIntrId)
+{
   int Status;
 #ifdef XPAR_INTC_0_DEVICE_ID
 #ifndef TESTAPP_GEN
   /* Initialize the interrupt controller and connect the ISRs */
   Status = XIntc_Initialize(IntcInstancePtr, INTC_DEVICE_ID);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     xil_printf("Failed init intc\r\n");
     return XST_FAILURE;
   }
@@ -410,7 +467,8 @@ int can::SetupInterruptSystem(XScuGic *IntcInstancePtr, XCanPs *CanInstancePtr,
    */
   Status = XIntc_Connect(IntcInstancePtr, CanIntrId,
                          (XInterruptHandler)XCanPs_IntrHandler, CanInstancePtr);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     xil_printf("Failed connect intc\r\n");
     return XST_FAILURE;
   }
@@ -420,7 +478,8 @@ int can::SetupInterruptSystem(XScuGic *IntcInstancePtr, XCanPs *CanInstancePtr,
    * all devices that cause interrupts.
    */
   Status = XIntc_Start(IntcInstancePtr, XIN_REAL_MODE);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     return XST_FAILURE;
   }
 #endif
@@ -446,13 +505,15 @@ int can::SetupInterruptSystem(XScuGic *IntcInstancePtr, XCanPs *CanInstancePtr,
    * use.
    */
   IntcConfig = XScuGic_LookupConfig(kIntcDeviceId);
-  if (NULL == IntcConfig) {
+  if (NULL == IntcConfig)
+  {
     return XST_FAILURE;
   }
 
   Status = XScuGic_CfgInitialize(IntcInstancePtr, IntcConfig,
                                  IntcConfig->CpuBaseAddress);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     return XST_FAILURE;
   }
 
@@ -473,7 +534,8 @@ int can::SetupInterruptSystem(XScuGic *IntcInstancePtr, XCanPs *CanInstancePtr,
   Status = XScuGic_Connect(IntcInstancePtr, CanIntrId,
                            (Xil_InterruptHandler)XCanPs_IntrHandler,
                            (void *)CanInstancePtr);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     return Status;
   }
 

@@ -1,10 +1,14 @@
 #pragma once
 
 #include "nmt.hpp"
+#include <vector>
 
-class maxon {
- private:
-  u16 motor_id_;
+using namespace std;
+
+class maxon
+{
+private:
+  u16 id_;
   u16 mode_display;
   // u16 ServSTA;
   u16 serv_err_;
@@ -58,65 +62,38 @@ class maxon {
   //   actual average troque
   s16 actual_average_torque;
 
- public:
-  /* ----------------------------motor control---------------------------------
-   */
-  int SetCtrlWrd(nmt &nmt,u16 ctrl_wrd);
+  // TXPDO1
+  vector<u8> txpdo1;
 
-  // set absolute position
-  int SetMotorAbsPos(u8 slave_id, s32 abs_pos);
-  s8 SetMotorAbsPos(const maxon_type *motor, s32 abs_pos);
-  s8 SetMotorAbsPos(const maxon_type *motor1, const maxon_type *motor2,
-                      s32 abs_pos1, s32 abs_pos2);
-  s8 SetMotorAbsPos(const maxon_type *motor1, const maxon_type *motor2,
-                      const maxon_type *motor3, s32 abs_pos1, s32 abs_pos2,
-                      s32 abs_pos3);
+  // TXPDO2
+  vector<u8> txpdo2;
 
-  // set relative position
-  int SetMotorRelPos(u8 slave_id, s32 relative_pos);
-  s8 SetMotorRelPos(maxon_type *motor, s32 relative_pos);
-  // set motor speed
-  int SetMotorSpeed(u8 slave_id, s32 speed_set);
-  s8 SetMotorSpeed(const maxon_type *motor, s32 speed);
+  // TXPDO3
+  vector<u8> txpdo3;
 
-  // set motor operation mode
-  int SetMotorMode(u8 slave_id, u16 operation_mode);
+  // TXPDO4
+  vector<u8> txpdo4;
 
-  // enable motor
-  void MotorEnable(u8 slave_id);
-  s8 MotorEnable(const maxon_type *motor);
-  // disable motor
-  void MotorDisable(u8 slave_id);
-  s8 MotorDisable(const maxon_type *motor);
-  // quick stop motor
-  void MotorQuickStop(u8 slave_id);
-
-  // change to torque mode
-  s8 ChangeToTorqueMode(const maxon_type *motor1, const maxon_type *motor2);
-  void ChangeToTorqueMode(u8 slave_id);
-  s8 ChangeToTorqueMode(const maxon_type *motor);
-
-  // change to PPM
-  void ChangeToPositionMode(u8 slave_id);
-  s8 ChangeToPositionMode(const maxon_type *motor);
-  void ChangeToPositionMode(u8 slave_id1, u8 slave_id2);
-
-  // move to relative position
-  void MoveRelative(u8 slave_id, s32 relative_pos);
-  // move to relative positon 2 motors
-  void MoveRelative(u8 slave_id1, u8 slave_id2, s32 relative_pos);
-  // move to absolute position
-  void MoveAbsolute(u8 slave_id, s32 absolute_pos);
-
-  // set target torque
-  int SetTargetTorque(u8 slave_id, s16 target_torque);
-  s8 SetTargetTorque(const maxon_type *motor, s16 target_torque);
-
+public:
+  // be the friend class of nmt
+  friend class nmt;
   maxon(void);
   ~maxon();
 
+  /* ------------------------ TXPDO ------------------------- */
+  //   txpdo1
+  int TxPdo1(nmt &nmt, u16 ctrl_wrd);
+
+  // txpdo2
+  int TxPdo2(nmt &nmt, u16 ctrl_wrd, s32 pos_sv,
+             u16 mode_of_operation);
+  // txpdo3
+  int TxPdo3(nmt &nmt, s16 target_torque,
+             u16 mode_of_operation);
+  // txpdo4
+  int TxPdo4(nmt &nmt, s32 speed_set, u16 mode_of_operation);
+
   void MotorParaRead(u16 cob_id, maxon_type *motor, u32 *recv_frame);
-  void CanDisPatch(void);
 
   // time delay
   void delay_us(u32 us);

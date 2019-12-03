@@ -1,8 +1,9 @@
 #pragma once
 #include "can.hpp"
 
-class nmt : public can {
- private:
+class nmt : public can
+{
+private:
   /* NMT Command Specifier, sent by master to change a slave state */
   /* ------------------------------------------------------------- */
   /* Should not be modified */
@@ -31,8 +32,8 @@ class nmt : public can {
   static const u16 kNODE_GUARD = (u16)0xE << 7;
   static const u16 kLSS = (u16)0xF << 7;
 
- public:
-  //  friend class
+public:
+  //  frend class
   friend class maxon;
   nmt(/* args */);
   ~nmt();
@@ -43,7 +44,6 @@ class nmt : public can {
   void NMTstop(u8 slave_id);
   void CmdSync(void);
 
-  /* ------------------------ TXPDO ------------------------- */
-  //   txpdo1
-  int TxPdo1(u8 slave_id, u16 ctrl_wrd);
+  // can dispatch
+  void CanDisPatch(void);
 };

@@ -5,10 +5,20 @@
 #include "xscugic.h"
 #include "xstatus.h"
 
+struct can_frame
+{
+    u32 can_id;
+    u32 can_dlc;
+    u8 data[8];
+};
+
+
 class can {
  private:
   // Interrupt controller
   // static const u32 kIntCtrlr=XScuGic;
+
+  static const u8 kCANFrameWordLength=4;
 
   /* CAN Device parapmeters */
   // CAN device id
@@ -69,9 +79,9 @@ class can {
   volatile int recv_done_;
 
   // send frame
-  u32 send_frame_[kFramDataLength];
+//   u8 send_frame_[kFramDataLength];
   // recv_frame;
-  u32 recev_frame_[kFramDataLength];
+  can_frame recv_frame_;
 
   // CAN filter number, 8 canopen devices, each has 4 TxPDO.
   static const u8 kNodeNum = 6;
@@ -86,7 +96,7 @@ class can {
 
   void Config(XCanPs *InstancePtr);
   int SendFrame(XCanPs *InstancePtr, u32 *TxFrame);
-  int send(u32 *TxFrame);
+  int send(can_frame & send_frame);
 
   void SendHandler(void *CallBackRef);
   void RecvHandler(void *CallBackRef);

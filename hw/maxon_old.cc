@@ -180,7 +180,7 @@ ssize_t maxon::TxPdo3(__u8 slave_id, __s16 target_torque,
   return can0.send(&tx_pdo3_frame);
 }
 
-// TxPDO4 operation mode set
+// TxPDO4
 ssize_t maxon::TxPdo4(__u8 slave_id, __s32 speed_set, __u16 mode_of_operation) {
   can_frame tx_pdo4_frame;
 
