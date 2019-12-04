@@ -1,9 +1,9 @@
 #pragma once
 #include "can.hpp"
+#include <vector>
 
-class nmt : public can
-{
-private:
+class nmt : public can {
+ private:
   /* NMT Command Specifier, sent by master to change a slave state */
   /* ------------------------------------------------------------- */
   /* Should not be modified */
@@ -32,9 +32,15 @@ private:
   static const u16 kNODE_GUARD = (u16)0xE << 7;
   static const u16 kLSS = (u16)0xF << 7;
 
-public:
-  //  frend class
+  // CAN filter number, 8 canopen devices, each has 4 TxPDO.
+
+  // number of slave nodes
+  u8 node_num_;
+
+ public:
+  //  friend class
   friend class maxon;
+  
   nmt(/* args */);
   ~nmt();
   /* -------------------------NMT functions------------------ */
@@ -44,6 +50,10 @@ public:
   void NMTstop(u8 slave_id);
   void CmdSync(void);
 
-  // can dispatch
-  void CanDisPatch(void);
+  /* ------------------------ TXPDO ------------------------- */
+  int TxPdo1(maxon &motor, u16 ctrl_wrd);
+  int TxPdo2(maxon &motor, u16 ctrl_wrd, s32 pos_sv, u16 mode_of_operation);
+
+  // can decode
+  void CanDecode(vector<maxon> & vec);
 };
